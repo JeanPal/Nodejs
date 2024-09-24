@@ -84,7 +84,7 @@ const ModificarReservas = async(req, res = response ) =>{
             return res.status(404).json({ msg: 'Reserva no encontrada' });
         }
 
-        if (reserva.cliente && String(reserva.cliente) !== String(req.usuario._id) && !req.usuario.esAdmin) {
+        if (String(reserva.cliente) !== String(req.usuario._id) && req.usuario.rol !== 'ADMIN_ROLE') {
             return res.status(403).json({ msg: 'No tienes permiso para modificar esta reserva' });
         }
 
@@ -105,8 +105,7 @@ const ModificarReservas = async(req, res = response ) =>{
                 nuevaReserva.reservadoD = true;
 
                 await nuevaReserva.save();
-
-                await enviarCorreo(req.usuario.email, 'Reserva Modificada', 'Tu reserva ha sido Modificada.');
+                await enviarCorreo(req.usuario.email, 'Reserva Modificada', 'Tu reserva ha sido modificada.');
 
                 reserva.cliente = null; 
                 reserva.numeroPersonas = null; 
@@ -126,13 +125,11 @@ const ModificarReservas = async(req, res = response ) =>{
         await reserva.save();
         res.json({ msg: 'Reserva actualizada con éxito', reserva });
     } catch (error) {
-        if (error.name === 'CastError') {
-            return res.status(400).json({ msg: 'ID de reserva no válida' });
-        }
+        const errorMsg = error.name === 'CastError' ? 'ID de reserva no válida' : 'Error en el servidor';
         console.log(error);
-        res.status(500).json({ msg: 'Error en el servidor' });
+        res.status(error.name === 'CastError' ? 400 : 500).json({ msg: errorMsg });
     }
-}
+};
 
 const EliminarReservas = async(req, res = response ) =>{
 
